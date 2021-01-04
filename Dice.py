@@ -6,6 +6,7 @@ token = '76332e8b65c176da5e469809c1e21e9b9a37cafd9c195778dd126e855786c686'
 tokenFile = 'token.txt'
 userName = ''
 userNameFile = 'userName.txt'
+versionNumber = 'v2.0'
 
 def setUp():
     global token
@@ -21,6 +22,15 @@ def setUp():
     fo.seek(0, 0)
     userName = fo.read()
     fo.close()
+
+    print('混元风暴骰子哥 Version: ' + versionNumber)
+    print('当前用户 : ' + userName)
+    print('当前token: ' + token)
+    help()
+
+def reset():
+    os.remove(tokenFile)
+    os.remove(userNameFile)
 
 def postMessage(msg):
     url = 'https://oapi.dingtalk.com/robot/send?access_token=' + token
@@ -52,13 +62,14 @@ def rollDice(diceSideCount, diceCount = 1):
 
 def help():
     print('''
-    尝试摇骰子输入: xDx 
-        例如: 1D20
+    尝试摇骰子输入: nDn 
+        例如: D20 或者 3D6
+        空敲回车可以重复上次的投掷（默认为D20）
 
     尝试控制台指令请参考:
         -h : help
-        -t : token  [token]
-        -n : name   [name]
+        -t : token | [token]
+        -n : name  | [name]
         -q : quit
         -r : reset config
 
@@ -83,10 +94,6 @@ def setToken(newToken):
     fo = open(tokenFile, "w")
     fo.write(token)
     fo.close()
-
-def reset():
-    os.remove(tokenFile)
-    os.remove(userNameFile)
 
 def control(inputStr):
     item = inputStr[1]
