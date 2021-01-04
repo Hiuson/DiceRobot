@@ -65,7 +65,7 @@ lastRoll = 'D20'
 def roll():
     inputStr = input('roll: ')
 
-    if len(inputStr) >= 2 and inputStr[0] == '-' and inputStr[1] == ' ':
+    if len(inputStr) >= 2 and inputStr[0] == '-' and inputStr[2] == ' ':
         control(inputStr)
     elif len(inputStr) == 0 or 'D' in inputStr: 
         global lastRoll
