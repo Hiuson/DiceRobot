@@ -6,7 +6,7 @@ token = '76332e8b65c176da5e469809c1e21e9b9a37cafd9c195778dd126e855786c686'
 tokenFile = 'token.txt'
 userName = ''
 userNameFile = 'userName.txt'
-versionNumber = 'v2.0'
+versionNumber = 'v2.1'
 
 def setUp():
     global token
@@ -39,31 +39,10 @@ def postMessage(msg):
     r = requests.post(url, headers=head, data=data)
     print(r.json())
 
-def rollDice(diceSideCount, diceCount = 1):
-    msg = '骰子哥 - '
-    if len(userName) > 0:
-        msg = msg + userName + ' - '
-    msg = msg + '%dD%d: ' % (diceCount, diceSideCount)
-    if diceCount == 1:
-        randNum = random.randint(1,diceSideCount)
-        msg = msg + '[%d]' % randNum
-    else:
-        sum = 0
-        for i in range(diceCount):
-            if i != 0:
-                msg = msg + ' + '
-            randNum = random.randint(1,diceSideCount)
-            sum += randNum
-            msg = msg + '[%d]' % randNum
-        msg = msg + ' = [%d]' % sum
-    
-    print(msg)
-    postMessage(msg)
-
 def help():
     print('''
-    尝试摇骰子输入: nDn 
-        例如: D20 或者 3D6
+    尝试摇骰子输入: nDn
+        例如: D20+3D6
         空敲回车可以重复上次的投掷（默认为D20）
 
     尝试控制台指令请参考:
@@ -108,30 +87,102 @@ def control(inputStr):
     elif item == 'q':
         quit()
 
-lastRoll = 'D20'
-def roll():
+def runloop():
     inputStr = input('roll: ')
     if len(inputStr) >= 2 and inputStr[0] == '-':
         control(inputStr)
     elif len(inputStr) == 0 or 'D' in inputStr: 
-        global lastRoll
-        if len(inputStr) == 0:
-            inputStr = lastRoll
-        else: 
-            lastRoll = inputStr
-        
-        DIdx = inputStr.find('D')
-        diceSideCount = int(inputStr[DIdx + 1:])
-        diceCountStr = inputStr[:DIdx]
-
-        if len(diceCountStr) == 0: 
-            rollDice(diceSideCount)
-        else:
-            diceCount = int(diceCountStr)
-            rollDice(diceSideCount, diceCount)
+        roll(inputStr)
     else:
         help()
 
+#Roll
+lastRoll = 'D20'
+def roll(inputStr):
+    global lastRoll
+    if len(inputStr) == 0:
+        inputStr = lastRoll
+    else: 
+        lastRoll = inputStr
+    
+    rollItem = RollItem(inputStr)
+    rollItem.roll()
+   
+    msg = '骰子哥 - '
+    if len(userName) > 0:
+        msg = msg + userName + ' - '
+    msg += inputStr + ': '
+    msg += rollItem.resultStr
+    print(msg)
+    postMessage(msg)
+
+class DiceItem:
+    def __init__(self, originStr):
+        self.originStr = originStr
+
+        strList = originStr.split("D")
+        if len(strList) != 2:
+            return
+
+        if len(strList[0]) == 0:
+            self.diceSideCount = int(strList[1])
+            self.diceCount = 1
+        else:
+            self.diceSideCount = int(strList[1])
+            self.diceCount = int(strList[0])
+
+    def roll(self):
+        self.resultList = []
+        self.resultSum = 0
+        self.resultStr = ''
+        for i in range(self.diceCount):
+            randNum = random.randint(1,self.diceSideCount)
+            self.resultList.append(randNum)
+            self.resultSum += randNum
+            if i > 0:
+                self.resultStr += ' + '
+            self.resultStr += '[%d]' % randNum
+            
+
+    def descript(self):
+        return '[%dD%d]' % (self.diceCount, self.diceSideCount)
+    
+
+class RollItem:
+    def __init__(self, originStr):
+        print('RollItem' + originStr)
+        self.originStr = originStr 
+
+        diceStrList = self.originStr.split("+")
+        diceList = []
+        for diceStr in diceStrList:
+            diceList.append(DiceItem(diceStr))
+        self.diceList = diceList
+    
+    def roll(self):
+        self.resultList = []
+        self.resultSum = 0
+        self.resultStr = ''
+
+        if len(self.diceList) == 1 and self.diceList[0].diceCount == 1:
+            diceItem = self.diceList[0]
+            diceItem.roll()
+            self.resultList.append(diceItem)
+            self.resultSum = diceItem.resultSum
+            self.resultStr += '[%d]' % self.resultSum
+            return
+
+        for diceItem in self.diceList:
+            diceItem.roll()
+            self.resultList.append(diceItem)
+            self.resultSum += diceItem.resultSum
+            if self.diceList.index(diceItem) > 0:
+                self.resultStr += ' + '
+            self.resultStr += diceItem.resultStr
+
+        self.resultStr += ' = [%d]' % self.resultSum
+
+#Runloop
 setUp()
 while(1):
-    roll()
+    runloop()
